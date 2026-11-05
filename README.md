@@ -1,15 +1,59 @@
 # Contract Compass
 
-A browser app for analyzing active Binance USDT perpetual contracts. Enter a symbol and holding horizon to view a chart, transparent long/short/wait assessment, two conditional scenarios, and cost-aware position sizing. SOLUSDT and a one-hour horizon are the defaults.
+A private browser app for active Binance USDT perpetual contracts. Version 2 adds readable type, one authoritative decision signal, live mark prices, and a session activity log.
 
-## Run locally
+## Which signal to use
 
-Serve `dist/` with any static HTTP server. For example, run `python -m http.server 8108 --directory dist`, then visit `http://localhost:8108`. ES modules require HTTP; opening index.html directly as a file is unsupported. No install, API key, or account connection is required.
+Use the large **decision banner**, rather than a scenario card or a single indicator.
 
-## Checks
+| Identifier | Meaning |
+| --- | --- |
+| LONG | The closed-candle long checks and current live price agree. Review risk before deciding. |
+| SHORT | The closed-candle short checks and current live price agree. Review risk before deciding. |
+| WATCH LONG / WATCH SHORT | Directional bias only. No confirmed entry. |
+| WAIT | The checks disagree or the entry is no longer valid. |
+| NO SIGNAL | Monitoring is paused, hidden, disconnected, updating, stale, or invalid. |
 
-Run `node --test tests/engine.test.mjs`. The analysis is in `dist/engine.js`; market requests and rendering are in `dist/app.js`. Browser requests go directly to `https://fapi.binance.com`; availability depends on location and exchange access. No proxy or geographic bypass is provided.
+This is an unvalidated technical heuristic, not a prediction model. No statistical accuracy, backtested returns, or guaranteed performance is claimed. Targets may never be reached. News, depth, portfolio exposure, account leverage tiers, and liquidation prices are not modeled. Funding is separate and excluded from sizing.
 
-## Limits
+## Run and test
 
-This is a technical heuristic, not a prediction model. No statistical accuracy, backtested returns, or guaranteed performance is claimed. It uses completed candles and explicitly expires old assessments. News, order book depth, portfolio exposure, liquidation prices, and account-specific leverage tiers are not modeled. Target levels are projections and may never be reached. Fees and slippage are editable assumptions; funding is shown separately and excluded from sizing. This app never places trades.
+Serve `dist/` with a static HTTP server: `python -m http.server 8108 --directory dist`, then visit `http://localhost:8108`. No install, API key, or exchange account connection is needed. ES modules require HTTP.
+
+With Node.js 22 or newer, run `npm test` and `npm run test:coverage`. Coverage enforces 80% lines, branches, and functions for the imported core modules. Rendering and live user journeys have separate checks in [TESTS.md](TESTS.md); the core percentage is not a renderer coverage claim.
+
+## Architecture and trust boundaries
+
+The app remains static, with no application backend, order execution, exchange credentials, or database. Sites manages private visitor access. Calculator balances are in memory: never saved or sent to Binance. Only the selected symbol, horizon, and appearance are stored locally.
+
+| Module | Responsibility |
+| --- | --- |
+| validation.js | Ordered candles, OHLC consistency, finite values, bounded costs. |
+| market-data.js | Validated catalog and REST snapshots from a fixed HTTPS origin; timeout, cancellation, rate-limit cooldown. |
+| engine.js | Pure completed-candle indicators, plans, cost-aware reward/risk, lot-rounded sizing. |
+| monitor.js | One fixed-origin WebSocket; event validation, timestamp deduplication, reconnect, silent-socket expiry, generation isolation. |
+| signal-state.js | Sole authority for an entry: freshness, visibility, costs, newest candle, current-price conditions. |
+| app.js | Lifecycle and accessible rendering; price ticks cannot independently confirm a candle entry. |
+
+The market client and monitor accept injected I/O and clocks. Analysis and decisions have no network or browser dependency. Presentation changes independently of the live quote and countdown.
+
+## Monitoring contract
+
+Binance's documented `/market/stream` route supplies a one-second mark-price stream and entry-interval candles. Actual delivery depends on the exchange and connection. REST analysis refreshes every 60 seconds and after a candle closes.
+
+An entry requires a quote no older than 10 seconds and analysis no older than 90 seconds. A newly closed stream candle suppresses the old signal until REST confirms it. The current price must retain the breakout, remain before target 1 and on the valid side of the stop, and avoid excessive extension. Unfinished candles cannot create a signal.
+
+Monitoring pauses when hidden or manually paused and refreshes before resuming. Silent sockets reconnect after 15 seconds; retry delays are 1, 2, 4, 8, 16, then at most 30 seconds. A contract change invalidates prior callbacks. In-page highlights are deduplicated by symbol/horizon/direction/candle. The bounded activity log stays in memory. There is no monitoring or notification service after the page closes.
+
+## Security controls and limits
+
+- Fixed HTTPS/WSS origins and validated active symbols; no arbitrary destinations or signed exchange requests.
+- Quotes/candles validated before analysis; wrong-symbol, malformed, delayed, future, duplicate and out-of-order messages rejected.
+- HTML Content Security Policy restricts scripts/styles to self and connections to the named market origins. Objects, frames, workers, form submissions and base URL injection are blocked. Referrer policy is no-referrer. Host headers and private access remain Sites responsibilities; a meta policy does not enforce frame-ancestors or replace host authorization.
+- User-visible strings use text nodes or validated/escaped values. No inline script handlers, remote executable code, analytics, secrets, or production dependencies.
+- Requests omit credentials. Rate limits and geographic restrictions are explicit errors; no geographic bypass is provided.
+- Stop fills, interruptions, and liquidation can cause losses beyond the calculator estimate. No orders are placed.
+
+## Release and recovery
+
+The existing Site identity, owner-only audience, and static configuration are preserved. The prior saved version is version 1, source commit 58142ca47f60979977cacd7dfa15b0b3f4e809ac. No schema or user-data migration is involved. Contract, horizon, and theme preferences remain compatible. Packages are built from the exact pushed source commit. If startup, monitoring or private access fails after release, review restoring the previous saved version in Sites history. Do not widen the audience to resolve a failure.

@@ -1,3 +1,4 @@
+import {validateCandles,validateCosts} from './validation.js';
 export const HORIZONS = {
   '15m': { label: '15 minutes', entry: '1m', trend: '15m', ms: 900000 },
   '1h': { label: '1 hour', entry: '5m', trend: '1h', ms: 3600000 },
@@ -40,8 +41,10 @@ export function netRR(plan, fee=.05, slip=.02) {
   return reward/risk;
 }
 export function sizePosition(plan, {balance,riskPct,leverage,fee,slip,step=.01,minQty=0,minNotional=0}) {
-  const values=[balance,riskPct,leverage,fee,slip,step];
-  if(values.some(v=>!Number.isFinite(v))||balance<=0||riskPct<=0||riskPct>100||leverage<1||leverage>125||fee<0||slip<0||step<=0)throw new Error('Use a positive balance, risk from 0.01–100%, leverage from 1–125×, and nonnegative costs.');
+  validateCosts({fee,slip});
+  if(!plan||![plan.entry,plan.stop,plan.target2].every(v=>Number.isFinite(v)&&v>0)||plan.entry===plan.stop||(plan.direction==='long'&&plan.stop>=plan.entry)||(plan.direction==='short'&&plan.stop<=plan.entry)||(plan.stop<plan.entry&&plan.target2<=plan.entry)||(plan.stop>plan.entry&&plan.target2>=plan.entry))throw new Error('Check entry, stop, target, and direction before sizing.');
+  const values=[balance,riskPct,leverage,fee,slip,step,minQty,minNotional];
+  if(values.some(v=>!Number.isFinite(v))||balance<=0||riskPct<=0||riskPct>100||leverage<1||leverage>125||fee<0||slip<0||step<=0||minQty<0||minNotional<0)throw new Error('Use a positive balance, risk from 0.01–100%, leverage from 1–125×, and nonnegative costs.');
   const budget=balance*riskPct/100;
   const perUnit=Math.abs(plan.entry-plan.stop)+(plan.entry+plan.stop)*(fee+slip)/100;
   const qty=roundTick(budget/perUnit,step,'down');
@@ -51,7 +54,9 @@ export function sizePosition(plan, {balance,riskPct,leverage,fee,slip,step=.01,m
   return {qty,notional,margin,budget,estimatedLoss:qty*perUnit,openingCost,affordable:margin+openingCost<=balance,meetsMinimum:qty>=minQty&&notional>=minNotional&&qty>0};
 }
 export function analyze(raw, horizon='1h', costs={fee:.05,slip:.02}) {
-  if(!HORIZONS[horizon])throw new Error('Choose a supported holding time.');
+  validateCosts(costs);
+  if(!Object.hasOwn(HORIZONS,horizon))throw new Error('Choose a supported holding time.');
+  validateCandles(raw?.entry);validateCandles(raw?.trend);
   if(!Number.isFinite(raw.tickSize)||raw.tickSize<=0||!Number.isFinite(raw.markPrice)||raw.markPrice<=0||!Number.isFinite(raw.serverTime)||!Number.isFinite(raw.markTime))throw new Error('The exchange returned an incomplete quote. Refresh before using a setup.');
   const candles=closeCandles(raw.entry,raw.serverTime), trend=closeCandles(raw.trend,raw.serverTime);
   if(candles.length<60||trend.length<60)throw new Error('This contract has too little closed-candle history. Try an established contract or a shorter holding time.');
