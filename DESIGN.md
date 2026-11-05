@@ -7,3 +7,7 @@ Graphite light palette: canvas #f8fafc, surface #ffffff, ink #0f172a, secondary 
 Segoe UI Variable / Segoe UI for the interface, with tabular numbers. A narrow navigation rail, generous left alignment, one large chart, a compact assessment beside it. Secondary tools sit below. On mobile, stack in reading order. No decorative imagery or unrelated dashboard tiles.
 
 States: initial loading, populated live snapshot, unsupported contract, exchange unavailable, canceled load, and expired snapshot. Never retain an actionable signal after failed refresh or a contract/horizon change. Analysis uses completed candles only. Position sizing includes editable fees and slippage, floors to the contract lot step, and explicitly excludes funding and liquidation estimates.
+
+## Surface refinement
+
+The signal banner and trade plans use neutral surfaces with uniform one-pixel outlines. Colored left/top edge stripes and the outlined signal-code badge are removed. Status text, directional labels, and keyboard focus indicators carry meaning without decorative card accents.
