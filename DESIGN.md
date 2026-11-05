@@ -11,3 +11,7 @@ States: initial loading, populated live snapshot, unsupported contract, exchange
 ## Surface refinement
 
 The signal banner and trade plans use neutral surfaces with uniform one-pixel outlines. Colored left/top edge stripes and the outlined signal-code badge are removed. Status text, directional labels, and keyboard focus indicators carry meaning without decorative card accents.
+
+## Optional beginner presentation
+
+Keep the current layout as the default. An accessible, keyboard-operable Beginner view switch reveals plain-language result explanations, a short guide and glossary, and a larger reading scale. Technical sections remain accessible through Show advanced details. Both views share the same signal engine. Preserve the neutral surfaces and lack of decorative edge stripes.

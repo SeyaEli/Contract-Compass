@@ -1,6 +1,6 @@
 # Contract Compass
 
-A private browser app for active Binance USDT perpetual contracts. Version 2 adds readable type, one authoritative decision signal, live mark prices, and a session activity log.
+A public browser app for active Binance USDT perpetual contracts. Version 2 adds readable type, one authoritative decision signal, live mark prices, and a session activity log.
 
 ## Which signal to use
 
@@ -24,7 +24,7 @@ With Node.js 22 or newer, run `npm test` and `npm run test:coverage`. Coverage e
 
 ## Architecture and trust boundaries
 
-The app remains static, with no application backend, order execution, exchange credentials, or database. Sites manages private visitor access. Calculator balances are in memory: never saved or sent to Binance. Only the selected symbol, horizon, and appearance are stored locally.
+The app remains static, with no application backend, order execution, exchange credentials, or database. Sites manages visitor access. Calculator balances are in memory: never saved or sent to Binance. Only the selected symbol, horizon, and appearance are stored locally.
 
 | Module | Responsibility |
 | --- | --- |
@@ -56,4 +56,8 @@ Monitoring pauses when hidden or manually paused and refreshes before resuming. 
 
 ## Release and recovery
 
-The existing Site identity, owner-only audience, and static configuration are preserved. The prior saved version is version 1, source commit 58142ca47f60979977cacd7dfa15b0b3f4e809ac. No schema or user-data migration is involved. Contract, horizon, and theme preferences remain compatible. Packages are built from the exact pushed source commit. If startup, monitoring or private access fails after release, review restoring the previous saved version in Sites history. Do not widen the audience to resolve a failure.
+The existing Site identity, public no-login audience, and static configuration are preserved. The previous saved version before the beginner toggle is version 3, source commit 7861b9bb43ea7b8fe687b0fb14c3ba39b1311770. No schema or user-data migration is involved. Contract, horizon, and theme preferences remain compatible. Packages are built from the exact pushed source commit. If startup, monitoring or private access fails after release, review restoring the previous saved version in Sites history. Do not widen the audience to resolve a failure.
+
+## Optional beginner view
+
+The Beginner view switch leaves the current layout as the default. Switching on adds larger 18px reading text, simple signal explanations, a getting-started guide, and a glossary. Technical sections are hidden until Show advanced details is selected. Switching off restores the current layout. The preference is stored locally as compass-view; invalid values fall back to current. This presentation layer does not modify signals, prices, calculations, or monitoring.

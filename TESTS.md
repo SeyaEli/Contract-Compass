@@ -40,3 +40,7 @@ Automated coverage covers the imported core modules, not every app.js rendering 
 
 Final automated result: 33 passing tests; core coverage 100% lines, 91.95% branches, 96.67% functions. The 80% coverage gates pass. Invalid cost input was also verified in the browser to suppress the entry signal immediately.
 
+
+## Beginner-toggle release
+
+VIEW-01 through VIEW-05 were observed failing before view-mode.js was implemented. They verify the default and saved preference, non-actionable WATCH explanations, long/short direction and risk language, unavailable states, and signal immutability. Final suite: 38 passing tests; core coverage 100% lines, 92.24% branches, 96.77% functions. Browser checks verified current-to-beginner switching, hidden technical sections, Show/Hide advanced details, persistence after reload, 18px reading text, no page overflow, and restoration of the current layout.

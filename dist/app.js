@@ -2,6 +2,7 @@ import {HORIZONS,normalizeSymbol,analyze,sizePosition} from './engine.js';
 import {createMarketClient} from './market-data.js';
 import {MarketMonitor} from './monitor.js';
 import {decisionSignal,signalIdentity} from './signal-state.js';
+import {readViewMode,beginnerGuidance} from './view-mode.js';
 
 const $=id=>document.getElementById(id);
 const client=createMarketClient();
@@ -11,6 +12,7 @@ const escape=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 let raw=null,result=null,meta=null,controller=null,requestId=0,fetchedAt=0,activeSymbol='',activeHorizon='1h';
 let quote=null,connection='connecting',monitoring=true,refreshing=false,decision=null,lastActivity='',lastCandle=0,presentationKey='',expectedClosedAt=0;
 const seenAlerts=new Set(),activity=[];
+let viewMode='current',advancedOpen=false;
 const cost=()=>({fee:+$('fee').value,slip:+$('slip').value});
 function costsValid(){return ['fee','slip'].every(id=>$(id).value!==''&&$(id).checkValidity());}
 function dp(){return Math.min(8,Math.max(2,Math.ceil(-Math.log10(raw?.tickSize||.01))));}
@@ -19,7 +21,26 @@ function time(v,withDate=false){return new Intl.DateTimeFormat(undefined,{...(wi
 function save(key,value){try{localStorage.setItem(key,value);}catch{}}
 function read(key){try{return localStorage.getItem(key);}catch{return null;}}
 function serverNow(){return raw?raw.serverTime+Date.now()-fetchedAt:Date.now();}
-function setBusy(b,silent=false){refreshing=b;$('analyze').disabled=b;$('analyze').setAttribute('aria-busy',String(b));$('analyze').textContent=b?'Analyzing…':'Analyze contract ↗';$('cancel').hidden=!b||silent;$('loading').hidden=!b||silent;$('refresh').disabled=b;}
+function setBusy(b,silent=false){refreshing=b;$('analyze').disabled=b;$('analyze').setAttribute('aria-busy',String(b));$('analyze').textContent=b?'Checking…':viewMode==='beginner'?'Check this coin':'Analyze contract ↗';$('cancel').hidden=!b||silent;$('loading').hidden=!b||silent;$('refresh').disabled=b;}
+function applyView(){
+  const beginner=viewMode==='beginner';
+  document.documentElement.dataset.view=viewMode;document.documentElement.dataset.advanced=String(advancedOpen);
+  $('beginner-toggle').checked=beginner;$('advanced-toggle').setAttribute('aria-expanded',String(advancedOpen));$('advanced-toggle').textContent=advancedOpen?'Hide advanced details':'Show advanced details';
+  $('page-title').textContent=beginner?'Check a coin. Understand the result.':'A clear signal. A considered trade.';
+  $('page-description').textContent=beginner?'A simple explanation of what the app sees, and what it means.':'Choose a contract. Follow the decision signal. Check the risk.';
+  document.querySelector('label[for="contract"]').textContent=beginner?'Coin symbol or trading pair':'Contract';
+  document.querySelector('label[for="horizon"]').textContent=beginner?'How long would you hold a trade?':'Planned holding time';
+  $('contract-help').textContent=beginner?'Type SOL or SOLUSDT, or choose a coin below. No exchange login needed.':'Binance USDT perpetuals · No account or API key needed';
+  const coins={BTCUSDT:'Bitcoin (BTC)',ETHUSDT:'Ethereum (ETH)',SOLUSDT:'Solana (SOL)'};
+  document.querySelectorAll('[data-symbol]').forEach(b=>{b.textContent=beginner?coins[b.dataset.symbol]:b.dataset.symbol.replace('USDT','');});
+  if(!$('analyze').disabled)$('analyze').textContent=beginner?'Check this coin':'Analyze contract ↗';
+  $('decision-heading').textContent=beginner?'Read this result first':'Use this decision signal';
+  document.querySelector('.signal-rule').innerHTML=beginner?'A <strong>possible setup</strong> means the app’s checks agree. It is not a promise of profit. <strong>Wait</strong> means no confirmed entry.':'Only <strong>Long signal</strong> or <strong>Short signal</strong> means the technical entry checks agree. <strong>Watch</strong> and <strong>Wait</strong> are not entries.';
+  document.querySelector('.market-price small').textContent=beginner?'Reference price · USDT':'Mark price · USDT';
+  if(raw)$('updated').textContent=beginner?'Last checked '+time(raw.serverTime,true):'Analysis '+time(raw.serverTime,true)+' · Last candle '+time(result.closedAt);
+  $('beginner-explanation').textContent='The app compares the price direction, the strength of the move, trading activity, and estimated costs. If the checks do not agree, it waits.';
+  if(result){renderDecision();renderRisk();}
+}
 const monitor=new MarketMonitor({serverNow,onStatus:s=>{connection=s;renderDecision();},onEvent:event=>{
   if(!raw)return;
   if(event.kind==='quote'){
@@ -60,7 +81,7 @@ function render(){
   const change=+t.priceChangePercent;$('change').textContent=(change>=0?'↗ +':'↘ ')+change.toFixed(2)+'%';$('change').className='change '+(change>=0?'positive':'negative');
   $('high').textContent=price(+t.highPrice);$('low').textContent=price(+t.lowPrice);$('volume').textContent=compact.format(+t.quoteVolume);$('funding').textContent=(raw.funding>=0?'+':'')+(raw.funding*100).toFixed(4)+'%';
   $('chart-interval').textContent=h.entry+' candles';$('chart-caption').textContent='Closed candles · '+h.trend+' trend filter';$('horizon-label').textContent=h.label+' horizon';
-  $('updated').textContent='Analysis '+time(raw.serverTime,true)+' · Last candle '+time(r.closedAt);
+  $('updated').textContent=viewMode==='beginner'?'Last checked '+time(raw.serverTime,true):'Analysis '+time(raw.serverTime,true)+' · Last candle '+time(r.closedAt);
   renderChart();renderDecision();renderRisk();
 }
 function renderDecision(){
@@ -73,15 +94,16 @@ function renderDecision(){
   $('quote-age').textContent=age===null?'Waiting for the first live price':`Price updated ${age}s ago · Analysis refreshes every 60s`;
   $('monitor-toggle').textContent=monitoring?'Pause monitoring':'Resume monitoring';$('monitor-toggle').setAttribute('aria-pressed',String(monitoring));
   if(!result)return;
-  $('decision-banner').className='decision-banner '+state.tone;$('decision-title').textContent=state.title;$('decision-code').textContent=state.code.replaceAll('_',' ');$('decision-icon').textContent=state.code==='LONG'?'↗':state.code==='SHORT'?'↘':state.code.startsWith('WATCH')?'◎':'Ⅱ';
-  $('decision-reason').textContent=state.reason;$('decision-next').textContent=state.next;$('freshness').textContent=state.code==='NO_SIGNAL'?'Not live':'Fresh data';
+  const plain=beginnerGuidance(state),beginner=viewMode==='beginner';
+  $('decision-banner').className='decision-banner '+state.tone;$('decision-title').textContent=beginner?plain.title:state.title;$('decision-code').textContent=state.code.replaceAll('_',' ');$('decision-icon').textContent=state.code==='LONG'?'↗':state.code==='SHORT'?'↘':state.code.startsWith('WATCH')?'◎':'Ⅱ';
+  $('decision-reason').textContent=beginner?plain.explanation:state.reason;$('decision-next').textContent=beginner?plain.next:state.next;$('freshness').textContent=state.code==='NO_SIGNAL'?'Not live':'Fresh data';
   $('results').classList.toggle('stale',state.code==='NO_SIGNAL');
   const span={'1m':60000,'5m':300000,'15m':900000,'1h':3600000}[HORIZONS[activeHorizon].entry];
   const seconds=Math.max(0,Math.ceil((Math.floor(serverNow()/span+1)*span-serverNow())/1000));
   $('next-candle').textContent=`Next ${HORIZONS[activeHorizon].entry} candle close in ${Math.floor(seconds/60)}:${String(seconds%60).padStart(2,'0')}`;
   const until=raw.nextFunding-serverNow();$('funding-note').hidden=!(until>=0&&until<HORIZONS[activeHorizon].ms);
   $('funding-note').textContent=`Funding falls within this holding window (${time(raw.nextFunding)}). Current rate ${(raw.funding*100).toFixed(4)}%. ${raw.funding>0?'Longs pay shorts':raw.funding<0?'Shorts pay longs':'Currently zero'}. Funding is variable and excluded from sizing.`;
-  const nextPresentation=[activeSymbol,activeHorizon,state.code,raw.serverTime,$('fee').value,$('slip').value].join(':');
+  const nextPresentation=[activeSymbol,activeHorizon,state.code,raw.serverTime,$('fee').value,$('slip').value,viewMode].join(':');
   if(nextPresentation!==presentationKey){presentationKey=nextPresentation;renderChecklist();renderPlans();renderRisk();}
   if(!state.actionable)$('signal-notice').hidden=true;
   const key=signalIdentity(activeSymbol,activeHorizon,state.code,result.closedAt);
@@ -145,6 +167,10 @@ function renderChart(){
 }
 
 $('search-form').addEventListener('submit',e=>{e.preventDefault();load();});
+$('beginner-toggle').addEventListener('change',()=>{viewMode=$('beginner-toggle').checked?'beginner':'current';advancedOpen=false;save('compass-view',viewMode);applyView();});
+$('advanced-toggle').addEventListener('click',()=>{advancedOpen=!advancedOpen;applyView();});
+document.querySelectorAll('a[href="#risk-section"],a[href="#methodology"]').forEach(a=>a.addEventListener('click',()=>{if(viewMode==='beginner'){advancedOpen=true;applyView();}}));
+document.querySelector('a[href="#beginner-glossary"]').addEventListener('click',()=>{$('beginner-glossary').open=true;});
 $('cancel').addEventListener('click',()=>{requestId++;controller?.abort();setBusy(false);invalidate();});
 $('contract').addEventListener('input',()=>{requestId++;controller?.abort();setBusy(false);invalidate();});
 $('horizon').addEventListener('change',()=>load());
@@ -164,4 +190,4 @@ const clockTimer=setInterval(()=>{renderDecision();if(result&&Date.now()-fetched
 document.addEventListener('visibilitychange',()=>{if(document.hidden){monitor.stop();controller?.abort();requestId++;setBusy(false);renderDecision();}else if(monitoring)load({silent:!!result});});
 window.addEventListener('pagehide',()=>{monitor.stop();controller?.abort();clearInterval(refreshTimer);clearInterval(clockTimer);});
 window.addEventListener('pageshow',event=>{if(event.persisted)location.reload();});
-load();
+viewMode=readViewMode(read('compass-view'));applyView();load();
