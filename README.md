@@ -22,6 +22,12 @@ Serve `dist/` with a static HTTP server: `python -m http.server 8108 --directory
 
 With Node.js 22 or newer, run `npm test` and `npm run test:coverage`. Coverage enforces 80% lines, branches, and functions for the imported core modules. Rendering and live user journeys have separate checks in [TESTS.md](TESTS.md); the core percentage is not a renderer coverage claim.
 
+## Deploy on Vercel
+
+Import this repository with the project Root Directory set to the repository root (leave it blank in Vercel). The committed `vercel.json` selects Other as the framework, skips install/build commands because this app has no dependencies or build step, and serves `dist/` as the output directory. Push to the connected production branch to deploy.
+
+If the homepage returns 404 but `/dist/index.html` loads, the repository root is being served instead of `dist/`. Deploy the commit containing `vercel.json`; the homepage and favicon must then load at `/` and `/favicon.ico`. Do not add a catch-all rewrite: the app uses query parameters and anchors, with no client-side path router. Missing assets should remain real 404 responses.
+
 ## Architecture and trust boundaries
 
 The app remains static, with no application backend, order execution, exchange credentials, or database. Sites manages visitor access. Calculator balances are in memory: never saved or sent to Binance. Only the selected symbol, horizon, and appearance are stored locally.
