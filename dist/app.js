@@ -184,6 +184,18 @@ function renderChart(){
 const chartResize=new ResizeObserver(()=>{if(result&&$('chart').parentElement.clientWidth>0&&Math.round($('chart').parentElement.clientWidth)!==chartWidth)renderChart();});
 chartResize.observe($('chart').parentElement);
 
+const navigationLinks=[...document.querySelectorAll('.rail a.rail-link[href]')];
+function updateNavigation(){
+  const selected=navigationLinks.some(a=>a.getAttribute('href')===location.hash)?location.hash:'#main';
+  for(const link of navigationLinks){
+    const active=link.getAttribute('href')===selected;
+    link.classList.toggle('active',active);
+    if(active)link.setAttribute('aria-current','location');else link.removeAttribute('aria-current');
+  }
+}
+window.addEventListener('hashchange',updateNavigation);
+updateNavigation();
+
 $('search-form').addEventListener('submit',e=>{e.preventDefault();load();});
 $('beginner-toggle').addEventListener('change',()=>{viewMode=$('beginner-toggle').checked?'beginner':'current';advancedOpen=false;save('compass-view',viewMode);applyView();});
 $('advanced-toggle').addEventListener('click',()=>{advancedOpen=!advancedOpen;applyView();});
