@@ -24,10 +24,12 @@ Public access; current/Beginner views; existing signal safety. Ads off on confir
 - [x] Write and observe failing policy tests for validation, off/review/live gates, consent and analytics URL scrubbing; implement policy.
 - [x] Write and observe failing build tests; implement static pages, metadata, sitemap, ads.txt, and public settings generation. Add owner checklist and configuration instructions.
 - [x] Implement privacy dialog, opt-in analytics and consent-gated single ad unit; integrate shared footer and learning navigation. Run tests and browser checks for mobile, consent and links.
-- [ ] Fresh independent review, correct material findings, commit/push and verify the Vercel release. Report account gates honestly.
+- [x] Fresh independent review, correct material findings, commit/push and verify the Vercel release. Report account gates honestly.
 
 ## Execution ledger
 
 Ruling: existing GitHub Issues is the support contact until the owner supplies an email. No payment/hosting upgrade will be performed without a specific purchase authorization. Publisher/account setup cannot be completed with invented values.
 
 Review batch: fixed CRLF-sensitive placement generation (red/green SITE-06), denied non-TCF regional traffic instead of assuming consent (ADS-05), and stopped loaded advertising on any authorization loss (ADS-07). Fresh reviewer verified all three resolved. Account-level analytics remains unavailable behind Vercel sign-in; keep analytics false until the operator enables and verifies it.
+
+Release evidence: implementation commit 933ea5e3bf8956c1fcb4ce997fcea71411c0c908 pushed to origin/main. Vercel reported successful deployment; unauthenticated checks returned 200 for all nine sitemap routes and 15 linked resources. Production settings were verified ads off and analytics false. The 53-test suite passed; imported line/branch/function coverage was 100% / 93.18% / 96.25%. Account creation, provider approval, commercial hosting, CMP publication and analytics activation remain owner actions documented in MONETIZATION.md.
