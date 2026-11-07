@@ -24,13 +24,13 @@ With Node.js 22 or newer, run `npm test` and `npm run test:coverage`. Coverage e
 
 ## Deploy on Vercel
 
-Import this repository with the project Root Directory set to the repository root (leave it blank in Vercel). The committed `vercel.json` selects Other as the framework, skips install/build commands because this app has no dependencies or build step, and serves `dist/` as the output directory. Push to the connected production branch to deploy.
+Import this repository with the project Root Directory set to the repository root (leave it blank in Vercel). The committed `vercel.json` selects Other as the framework, skips dependency installation, runs the dependency-free `node scripts/build-site.mjs` to generate content and validated public settings, and serves `dist/` as the output directory. Push to the connected production branch to deploy. For local content/configuration edits, run `npm run build` before serving `dist/`.
 
 If the homepage returns 404 but `/dist/index.html` loads, the repository root is being served instead of `dist/`. Deploy the commit containing `vercel.json`; the homepage and favicon must then load at `/` and `/favicon.ico`. Do not add a catch-all rewrite: the app uses query parameters and anchors, with no client-side path router. Missing assets should remain real 404 responses.
 
 ## Architecture and trust boundaries
 
-The app remains static, with no application backend, order execution, exchange credentials, or database. Sites manages visitor access. Calculator balances are in memory: never saved or sent to Binance. Only the selected symbol, horizon, and appearance are stored locally.
+The app remains static and public, with no application backend, order execution, exchange credentials, or database. Vercel serves the current GitHub deployment; the legacy Sites identity is retained in its separate hosting manifest. Calculator balances remain in page memory. The selected symbol, horizon, appearance, and optional measurement preference can be stored locally.
 
 | Module | Responsibility |
 | --- | --- |
@@ -56,7 +56,7 @@ Monitoring pauses when hidden or manually paused and refreshes before resuming. 
 - Fixed HTTPS/WSS origins and validated active symbols; no arbitrary destinations or signed exchange requests.
 - Quotes/candles validated before analysis; wrong-symbol, malformed, delayed, future, duplicate and out-of-order messages rejected.
 - HTML Content Security Policy restricts scripts/styles to self and connections to the named market origins. Objects, frames, workers, form submissions and base URL injection are blocked. Referrer policy is no-referrer. Host headers and private access remain Sites responsibilities; a meta policy does not enforce frame-ancestors or replace host authorization.
-- User-visible strings use text nodes or validated/escaped values. No inline script handlers, remote executable code, analytics, secrets, or production dependencies.
+- User-visible strings use text nodes or validated/escaped values. There are no inline script handlers, secrets, or production package dependencies. The shipped configuration loads no advertising or analytics provider code. Optional integrations are isolated in site.js and gated by validated configuration and privacy choices.
 - Requests omit credentials. Rate limits and geographic restrictions are explicit errors; no geographic bypass is provided.
 - Stop fills, interruptions, and liquidation can cause losses beyond the calculator estimate. No orders are placed.
 
@@ -67,3 +67,7 @@ The existing Site identity, public no-login audience, and static configuration a
 ## Optional beginner view
 
 The Beginner view switch leaves the current layout as the default. Switching on adds larger 18px reading text, simple signal explanations, a getting-started guide, and a glossary. Technical sections are hidden until Show advanced details is selected. Switching off restores the current layout. The preference is stored locally as compass-view; invalid values fall back to current. This presentation layer does not modify signals, prices, calculations, or monitoring.
+
+## Learning, privacy and future advertising
+
+Public information and guide pages are generated from content/pages.mjs. The existing trading engine and monitoring are unchanged. A separate site.js handles optional services; failure there must not interrupt the workspace. User opt-in controls page measurement, and URL queries/fragments and calculator inputs are excluded. Live ads are disabled because the owner confirmed Vercel Hobby and no AdSense account. Read [MONETIZATION.md](MONETIZATION.md) for the real account, approval, commercial-hosting and consent-provider gates. No actual ad delivery or revenue is claimed.

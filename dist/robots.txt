@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://contract-compass-beta.vercel.app/sitemap.xml

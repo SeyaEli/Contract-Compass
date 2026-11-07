@@ -1,0 +1,12 @@
+{
+  "origin": "https://contract-compass-beta.vercel.app",
+  "ads": {
+    "mode": "off",
+    "publisherId": "",
+    "slotId": "",
+    "siteApproved": false,
+    "commercialHosting": false,
+    "certifiedCmpId": null
+  },
+  "analytics": false
+}

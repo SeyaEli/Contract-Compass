@@ -16,6 +16,8 @@ The page is public and requires no login. Monitoring runs while the page is open
 ## Capabilities and Constraints
 Public Binance REST and WebSocket data; completed-candle analysis; fresh-quote and fresh-analysis gates; editable cost assumptions; browser-local calculator inputs. No order placement, exchange credentials, trained prediction model, or claimed win rate. A scenario alone is not an entry signal.
 
+Public About, Contact, Privacy and learning guides supplement the workspace. Optional usage measurement requires explicit visitor opt-in and host setup. Advertising is off while the owner is on Vercel Hobby without an AdSense account. Review/live configuration is validated, with real publisher IDs and commercial-hosting, approval and certified-consent prerequisites; unknown or unsupported consent never authorizes an ad. Account approval and actual vendor delivery are external requirements.
+
 ## Brand Commitments
 Professional workspace with compact overview, prominent chart, and clear live status, confirmed by the user on November 5, 2026. Keep the optional Beginner switch, light/dark themes, public access, and existing signal rules. Use neutral panel outlines without decorative colored edge stripes.
 
